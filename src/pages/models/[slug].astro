@@ -210,23 +210,20 @@ const sortedEngines = data.supported_inference_engines ? [...data.supported_infe
   {/* Model Details / Description Section */}
   <section class="py-16 bg-nvidia-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl font-bold text-nvidia-black mb-6">Model Details</h2>
-      <div class="prose prose-lg text-nvidia-gray-600 max-w-none">
-        <Content />
-      </div>
-      
-      {/* External Resources - build.nvidia.com and HuggingFace links */}
-      {(data.build_nvidia_url || huggingfaceUrl) && (
-        <div class="mt-10">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h2 class="text-3xl font-bold text-nvidia-black">Model Details</h2>
+        
+        {/* External Resources - next to Model Details heading */}
+        {(data.build_nvidia_url || huggingfaceUrl) && (
           <div class="flex flex-wrap gap-3">
             {data.build_nvidia_url && (
               <a 
                 href={data.build_nvidia_url} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-nvidia-black hover:bg-nvidia-gray-800 text-white font-semibold rounded-lg transition-colors border border-nvidia-gray-700"
+                class="relative inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-black px-4 pt-2.5 pb-4 font-semibold text-white transition-colors hover:bg-gray-800 after:absolute after:right-4 after:bottom-2 after:left-4 after:h-[3px] after:rounded-full after:bg-[#76b900] after:content-['']"
               >
-                <img src="/images/icons/nvidia-eye-logo.png" alt="NVIDIA" class="w-5 h-5 invert" />
+                <img src="https://www.nvidia.com/favicon.ico" alt="NVIDIA" class="h-5 w-5 brightness-0 invert" />
                 Try on build.nvidia.com
               </a>
             )}
@@ -235,15 +232,18 @@ const sortedEngines = data.supported_inference_engines ? [...data.supported_infe
                 href={huggingfaceUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#FFD21E] hover:bg-[#FFE066] text-black font-semibold rounded-lg transition-colors"
+                class="relative inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-100 px-4 pt-2.5 pb-4 font-semibold text-black transition-colors hover:bg-gray-200 after:absolute after:right-4 after:bottom-2 after:left-4 after:h-[3px] after:rounded-full after:bg-[#FFD21E] after:content-['']"
               >
                 <img src="/images/icons/hf-logo.png" alt="HuggingFace" class="w-5 h-5" />
                 View on HuggingFace
               </a>
             )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <div class="prose prose-lg text-nvidia-gray-600 max-w-none">
+        <Content />
+      </div>
     </div>
   </section>
 </Layout>
