@@ -7,13 +7,15 @@ order: 3
 tags: ["setup", "jetson", "ssd", "nvme", "docker", "storage", "containers"]
 ---
 
+import Tabs from '../../components/Tabs.astro';
+
 Once you have your Jetson set up by flashing the latest Jetson Linux (L4T) BSP on it or by flashing the SD card with the whole JetPack image, before embarking on testing out all the great generative AI applications using `jetson-containers`, you want to make sure you have a huge storage space for all the containers and the models you will download.
 
 This guide shows how you can install SSD on your Jetson and set it up for Docker.
 
 ---
 
-## SSD Installation
+## SSD
 
 ### Physical Installation
 
@@ -23,23 +25,21 @@ This guide shows how you can install SSD on your Jetson and set it up for Docker
 
 3. **Reconnect** any peripherals, and then reconnect the power supply to turn on the Jetson developer kit.
 
-4. **Verify** that your Jetson identifies a new memory controller on PCI bus:
+4. Once the system is up, **verify** that your Jetson identifies a new memory controller on PCI bus:
 
 ```bash
 lspci
 ```
 
-The output should show something like:
+The output should look like:
 
-```
-0007:01:00.0 Non-Volatile memory controller: Marvell Technology Group Ltd. Device 1322 (rev 02)
-```
+<pre style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px;"><code>{"0007:01:00.0 Non-Volatile memory controller: Marvell Technology Group Ltd. Device 1322 (rev 02)"}</code></pre>
 
 ---
 
 ### Format and Set Up Auto-mount
 
-1. **Find the device name:**
+1. Run `lsblk` to find the device name:
 
 ```bash
 lsblk
@@ -47,24 +47,17 @@ lsblk
 
 The output should look like:
 
-```
-NAME         MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
-loop0          7:0    0    16M  1 loop
-mmcblk1      179:0    0  59.5G  0 disk
-├─mmcblk1p1  179:1    0    58G  0 part /
-...
-nvme0n1      259:0    0 238.5G  0 disk
-```
+<pre style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; white-space: pre-wrap;"><code>{"NAME         MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT\nloop0          7:0    0    16M  1 loop\nmmcblk1      179:0    0  59.5G  0 disk\n├─mmcblk1p1  179:1    0    58G  0 part /\n├─mmcblk1p2  179:2    0   128M  0 part\n├─mmcblk1p3  179:3    0   768K  0 part\n├─mmcblk1p4  179:4    0  31.6M  0 part\n├─mmcblk1p5  179:5    0   128M  0 part\n├─mmcblk1p6  179:6    0   768K  0 part\n├─mmcblk1p7  179:7    0  31.6M  0 part\n├─mmcblk1p8  179:8    0    80M  0 part\n├─mmcblk1p9  179:9    0   512K  0 part\n├─mmcblk1p10 179:10   0    64M  0 part\n├─mmcblk1p11 179:11   0    80M  0 part\n├─mmcblk1p12 179:12   0   512K  0 part\n├─mmcblk1p13 179:13   0    64M  0 part\n└─mmcblk1p14 179:14   0 879.5M  0 part\nzram0        251:0    0   1.8G  0 disk [SWAP]\nzram1        251:1    0   1.8G  0 disk [SWAP]\nzram2        251:2    0   1.8G  0 disk [SWAP]\nzram3        251:3    0   1.8G  0 disk [SWAP]\nnvme0n1      259:0    0 238.5G  0 disk"}</code></pre>
 
 Identify the device corresponding to your SSD. In this case, it is `nvme0n1`.
 
-2. **Format the SSD, create a mount point, and mount it:**
+2. **Format the SSD**, create a mount point, and mount it:
 
 ```bash
 sudo mkfs.ext4 /dev/nvme0n1
 ```
 
-> You can choose any name for the mount point directory. We use `/ssd` here, but in `jetson-containers`' documentation, `/mnt` is used.
+> You can choose any name for the mount point directory. We use `/ssd` here, but in `jetson-containers`' [setup.md](https://github.com/dusty-nv/jetson-containers/blob/master/docs/setup.md) documentation, `/mnt` is used.
 
 ```bash
 sudo mkdir /ssd
@@ -99,22 +92,25 @@ sudo chown ${USER}:${USER} /ssd
 
 ---
 
-## Docker Setup
+## Docker
 
 ### Install nvidia-container Package
 
-> **Note:** If you used an NVIDIA-supplied SD card image to flash your SD card, all necessary JetPack components (including `nvidia-containers`) and Docker are already pre-installed, so this step can be skipped.
+<div class="admonition note">
+<p class="admonition-title">📘 Note</p>
+<p>If you used an NVIDIA-supplied SD card image to flash your SD card, all necessary JetPack components (including <code>nvidia-containers</code>) and Docker are already pre-installed, so this step can be skipped.</p>
+</div>
 
 ```bash
 sudo apt update
 sudo apt install -y nvidia-container
 ```
 
-**For JetPack 6.x users:**
-
-If you flash Jetson Linux (L4T) R36.x (JetPack 6.x) on your Jetson using SDK Manager, and install `nvidia-container` using `apt`, on JetPack 6.x it no longer automatically installs Docker.
-
-Run the following to manually install Docker and set it up:
+<div class="admonition info">
+<p class="admonition-title">ℹ️ JetPack 6.x users</p>
+<p>If you flash Jetson Linux (L4T) R36.x (JetPack 6.x) on your Jetson using SDK Manager, and install <code>nvidia-container</code> using <code>apt</code>, on JetPack 6.x it no longer automatically installs Docker.</p>
+<p>Therefore, you need to run the following to manually install Docker and set it up:</p>
+</div>
 
 ```bash
 sudo apt update
@@ -135,7 +131,8 @@ newgrp docker
 
 2. **Add default runtime** in `/etc/docker/daemon.json`:
 
-**One-liner method:**
+<Tabs labels={["⚡ One-liner method", "✏️ Manual method"]}>
+<div class="nv-tab-panel active">
 
 ```bash
 sudo apt install -y jq
@@ -144,7 +141,9 @@ sudo jq '. + {"default-runtime": "nvidia"}' /etc/docker/daemon.json | \
   sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json
 ```
 
-**Manual method:**
+</div>
+
+<div class="nv-tab-panel">
 
 Edit the file:
 
@@ -165,6 +164,9 @@ Insert the `"default-runtime": "nvidia"` line:
     "default-runtime": "nvidia"
 }
 ```
+
+</div>
+</Tabs>
 
 3. **Restart Docker:**
 
@@ -190,7 +192,7 @@ sudo systemctl stop docker
 sudo du -csh /var/lib/docker/ && \
     sudo mkdir /ssd/docker && \
     sudo rsync -axPS /var/lib/docker/ /ssd/docker/ && \
-    sudo du -csh  /ssd/docker/
+    sudo du -csh /ssd/docker/
 ```
 
 3. **Edit `/etc/docker/daemon.json`:**
@@ -232,23 +234,35 @@ sudo systemctl daemon-reload && \
 
 ### Test Docker on SSD
 
-1. **[Terminal 1]** Open a terminal to monitor disk usage:
+<Tabs labels={["📺 Terminal 1 - Monitor", "💻 Terminal 2 - Pull"]}>
+<div class="nv-tab-panel active">
+
+Open a terminal to monitor disk usage:
 
 ```bash
 watch -n1 df
 ```
 
-2. **[Terminal 2]** Open a new terminal and start Docker pull:
+Observe that the disk usage on `/ssd` goes up as the container image is downloaded and extracted in Terminal 2.
+
+</div>
+
+<div class="nv-tab-panel">
+
+Open a new terminal and start Docker pull:
 
 ```bash
 docker pull ubuntu:22.04
 ```
 
-3. **[Terminal 1]** Observe that the disk usage on `/ssd` goes up as the container image is downloaded and extracted.
+Once complete, verify the image:
 
 ```bash
 docker image ls
 ```
+
+</div>
+</Tabs>
 
 ---
 
@@ -277,9 +291,9 @@ docker info | grep -e "Runtime" -e "Root"
 ```
 
 Expected output should show:
-- SSD mounted at `/ssd`
-- Docker Root Dir: `/ssd/docker`
-- Default Runtime: `nvidia`
+- ✅ SSD mounted at `/ssd`
+- ✅ Docker Root Dir: `/ssd/docker`
+- ✅ Default Runtime: `nvidia`
 
 ---
 
@@ -291,7 +305,9 @@ Your Jetson is now configured with SSD storage and Docker optimized for AI workl
 
 ## Next Steps
 
-- [Introduction to GenAI](/tutorials/genai-on-jetson-llms-vlms) - Start running LLMs and VLMs
-- [Ollama](/tutorials/ollama) - Easy local LLM deployment
-- [Supported Models](/models) - Browse optimized models for Jetson
+<p>
+<a href="/tutorials/genai-on-jetson-llms-vlms" class="nv-button">🤖 Introduction to GenAI →</a>
+<a href="/tutorials/ollama" class="nv-button secondary" style="margin-left: 1rem;">🦙 Ollama</a>
+<a href="/models" class="nv-button secondary" style="margin-left: 1rem;">📦 Supported Models</a>
+</p>
 

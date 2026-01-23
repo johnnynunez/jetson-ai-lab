@@ -1,0 +1,375 @@
+---
+/**
+ * Tabs Component - Reusable tabbed content for tutorials
+ * 
+ * Usage in MDX files:
+ * 
+ * import Tabs from '../../components/Tabs.astro';
+ * 
+ * <Tabs labels={["Tab 1", "Tab 2", "Tab 3"]}>
+ *   <div class="nv-tab-panel active">Content 1</div>
+ *   <div class="nv-tab-panel">Content 2</div>
+ *   <div class="nv-tab-panel">Content 3</div>
+ * </Tabs>
+ * 
+ * This file also includes global styles for:
+ * - Subtabs (.nv-subtabs) - for nested GUI/CUI tabs
+ * - Admonitions (.admonition) - note, warning, tip, danger, info
+ * - Collapsible sections (.nv-details) - expandable content
+ * - Buttons (.nv-button) - primary and secondary styles
+ * - Utility classes - .tutorial-img, kbd, .blob-green/white/black
+ */
+
+export interface Props {
+  labels: string[];
+  class?: string;
+}
+
+const { labels, class: className } = Astro.props;
+const tabId = `tabs-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<div class={`nv-tabs ${className || ''}`} data-tabs-id={tabId}>
+  <div class="nv-tabs-labels">
+    {labels.map((label, index) => (
+      <button
+        type="button"
+        role="tab"
+        aria-selected={index === 0 ? "true" : "false"}
+        class={`nv-tab-btn ${index === 0 ? 'active' : ''}`}
+        data-tab-index={index}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+  <div class="nv-tabs-content">
+    <slot />
+  </div>
+</div>
+
+<style is:global>
+  .nv-tabs {
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+
+  .nv-tabs-labels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .nv-tab-btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    background: transparent;
+    color: #4a5568;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+
+  .nv-tab-btn:hover {
+    color: #76b900;
+    background: rgba(118, 185, 0, 0.05);
+  }
+
+  .nv-tab-btn.active {
+    color: #76b900;
+    background: #ffffff;
+    border-bottom-color: #76b900;
+  }
+
+  .nv-tabs-content {
+    padding: 1.5rem;
+    background: #ffffff;
+  }
+
+  .nv-tab-panel {
+    display: none;
+  }
+
+  .nv-tab-panel.active {
+    display: block;
+  }
+
+  /* Nested/Sub tabs styling */
+  .nv-subtabs {
+    margin: 1rem 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+
+  .nv-subtabs-labels {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .nv-subtab-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .nv-subtab-btn:hover {
+    color: #76b900;
+  }
+
+  .nv-subtab-btn.active {
+    color: #76b900;
+    background: #ffffff;
+    border-bottom-color: #76b900;
+  }
+
+  .nv-subtabs-content {
+    padding: 1rem;
+    background: #ffffff;
+  }
+
+  .nv-subtab-panel {
+    display: none;
+  }
+
+  .nv-subtab-panel.active {
+    display: block;
+  }
+
+  /* Admonitions styling */
+  .admonition {
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    border-left: 4px solid;
+  }
+
+  .admonition-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .admonition.note {
+    background: #eff6ff;
+    border-color: #3b82f6;
+  }
+  .admonition.note .admonition-title { color: #1d4ed8; }
+
+  .admonition.warning {
+    background: #fefce8;
+    border-color: #eab308;
+  }
+  .admonition.warning .admonition-title { color: #a16207; }
+
+  .admonition.danger {
+    background: #fef2f2;
+    border-color: #ef4444;
+  }
+  .admonition.danger .admonition-title { color: #b91c1c; }
+
+  .admonition.tip {
+    background: #f0fdf4;
+    border-color: #22c55e;
+  }
+  .admonition.tip .admonition-title { color: #15803d; }
+
+  .admonition.info {
+    background: #f0fdf4;
+    border-color: #76b900;
+  }
+  .admonition.info .admonition-title { color: #76b900; }
+
+  /* Collapsible/Details styling */
+  .nv-details {
+    margin: 1rem 0;
+    border: 2px solid #22d3ee;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  .nv-details summary {
+    padding: 0.875rem 1.25rem;
+    background: #ecfeff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    color: #0891b2;
+    list-style: none;
+    transition: background 0.2s;
+  }
+
+  .nv-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .nv-details summary::before {
+    content: "ℹ️";
+  }
+
+  .nv-details summary::after {
+    content: "›";
+    margin-left: auto;
+    font-size: 1.25rem;
+    transition: transform 0.2s;
+  }
+
+  .nv-details[open] summary::after {
+    transform: rotate(90deg);
+  }
+
+  .nv-details summary:hover {
+    background: #cffafe;
+  }
+
+  .nv-details .nv-details-content {
+    padding: 1rem;
+  }
+
+  /* Button styling matching old site */
+  .nv-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #76b900;
+    color: #000000;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+  }
+
+  .nv-button:hover {
+    background: #5a9100;
+    color: #000000;
+    text-decoration: none;
+  }
+
+  .nv-button.secondary {
+    background: #f3e9f2;
+    color: #b544c4;
+    border: 1px solid #b544c4;
+  }
+
+  .nv-button.secondary:hover {
+    background: #e8d5e7;
+  }
+
+  /* Image styling */
+  .tutorial-img {
+    max-width: 100%;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin: 0.5rem 0;
+  }
+
+  /* Keyboard key styling */
+  kbd {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.875em;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  /* Color blobs for cable colors */
+  .blob-green {
+    background: #22c55e;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.875em;
+  }
+  .blob-white {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.875em;
+  }
+  .blob-black {
+    background: #1e293b;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.875em;
+  }
+</style>
+
+<script>
+  function initTabs() {
+    document.querySelectorAll('.nv-tabs').forEach(container => {
+      const buttons = container.querySelectorAll('.nv-tab-btn');
+      const panels = container.querySelectorAll(':scope > .nv-tabs-content > .nv-tab-panel');
+      
+      // Activate first panel by default
+      if (panels[0] && !panels[0].classList.contains('active')) {
+        panels[0].classList.add('active');
+      }
+      
+      buttons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+          buttons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.setAttribute('aria-selected', 'false');
+          });
+          panels.forEach(panel => panel.classList.remove('active'));
+          
+          button.classList.add('active');
+          button.setAttribute('aria-selected', 'true');
+          if (panels[index]) panels[index].classList.add('active');
+        });
+      });
+    });
+
+    // Subtabs
+    document.querySelectorAll('.nv-subtabs').forEach(container => {
+      const buttons = container.querySelectorAll('.nv-subtab-btn');
+      const panels = container.querySelectorAll(':scope > .nv-subtabs-content > .nv-subtab-panel');
+      
+      if (panels[0] && !panels[0].classList.contains('active')) {
+        panels[0].classList.add('active');
+      }
+      
+      buttons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+          buttons.forEach(btn => btn.classList.remove('active'));
+          panels.forEach(panel => panel.classList.remove('active'));
+          
+          button.classList.add('active');
+          if (panels[index]) panels[index].classList.add('active');
+        });
+      });
+    });
+  }
+
+  // Run on initial load
+  initTabs();
+  
+  // Re-run when Astro does client-side navigation
+  document.addEventListener('astro:page-load', initTabs);
+</script>
