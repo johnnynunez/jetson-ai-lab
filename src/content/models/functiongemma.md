@@ -4,7 +4,7 @@ model_id: "functiongemma"
 short_description: "Google's specialized function calling model built on Gemma 3 270M, optimized for tool use"
 family: "Google Gemma3"
 icon: "💎"
-is_new: true
+is_new: false
 order: 0.5
 type: "Text"
 memory_requirements: "1GB RAM"
