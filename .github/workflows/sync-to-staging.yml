@@ -1,39 +1,41 @@
-   # Sync to Staging Repository
-   # This workflow pushes changes to the internal staging repo whenever main is updated
-   
-   name: Sync to Staging
-   
-   on:
-     push:
-       branches:
-         - main
-     workflow_dispatch:
-   
-   jobs:
-     sync:
-       name: Push to Staging Repo
-       runs-on: ubuntu-latest
-       
-       steps:
-         - name: Checkout
-           uses: actions/checkout@v4
-           with:
-             fetch-depth: 0
-   
-         - name: Setup SSH
-           run: |
-             mkdir -p ~/.ssh
-             echo "${{ secrets.STAGING_DEPLOY_KEY }}" > ~/.ssh/deploy_key
-             chmod 600 ~/.ssh/deploy_key
-             ssh-keyscan github.com >> ~/.ssh/known_hosts
-   
-         - name: Push to staging repository
-           run: |
-             git remote add staging git@github.com:NVIDIA-AI-IOT/jetson-ai-lab-stg.git
-             GIT_SSH_COMMAND="ssh -i ~/.ssh/deploy_key" git push staging main --force
-           
-         - name: Summary
-           run: |
-             echo "## Sync to Staging Complete" >> $GITHUB_STEP_SUMMARY
-             echo "" >> $GITHUB_STEP_SUMMARY
-             echo "✅ Pushed to [jetson-ai-lab-stg](https://github.com/NVIDIA-AI-IOT/jetson-ai-lab-stg)" >> $GITHUB_STEP_SUMMARY
+# Sync to Staging Repository
+# This workflow pushes changes to the internal staging repo whenever main is updated
+
+name: Sync to Staging
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Push to Staging Repo
+    runs-on: ubuntu-latest
+    # Only run in the main repo, not in staging (which receives this workflow file)
+    if: github.repository == 'NVIDIA-AI-IOT/jetson-ai-lab'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Push to staging repository
+        run: |
+          git remote add staging git@github.com:NVIDIA-AI-IOT/jetson-ai-lab-stg.git
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/deploy_key" git push staging main --force
+        
+      - name: Summary
+        run: |
+          echo "## Sync to Staging Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Pushed to [jetson-ai-lab-stg](https://github.com/NVIDIA-AI-IOT/jetson-ai-lab-stg)" >> $GITHUB_STEP_SUMMARY
