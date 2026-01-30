@@ -1,87 +1,44 @@
-# 🎯 Tutorial Template – Unified System
+# Tutorial Template – Unified System
 
-## 📋 How to Publish a New Tutorial
+## How to Publish a New Tutorial
 
-### 1. Create the Markdown file
+### 1. Create the content file
 
-Place a `.md` file inside `src/content/tutorials/` using the structure below:
+Place a `.md` or `.mdx` file inside `src/content/tutorials/` using the structure below.
+
+**Use `.mdx`** if you need interactive components (Tabs, collapsible sections, etc.)
 
 ```markdown
 ---
 title: "Tutorial Title"
 description: "Concise summary of the tutorial"
-difficulty: "Beginner"
-duration: "30 min"
+category: "Setup"
+section: "Jetson Setup"
+order: 1
 tags: ["tag1", "tag2", "tag3"]
-model: "model-name"
-publishedAt: 2024-09-15
-author: "Asier Arranz"
-featured: true
 ---
 
-## 🎯 Overview
+## Overview
 
 Tutorial introduction...
 
-## 📋 Prerequisites
+## Prerequisites
 
-### Hardware Requirements
-- **Jetson Thor** (128GB)
-- **AGX Orin 64GB/32GB**
-- **Orin NX 16GB**
-- **Orin Nano 8GB**
+- **JetPack 6.x**
+- **Jetson Orin Nano / AGX Orin**
 
-### Software Requirements
-- **JetPack 5.1+**
-- **Python 3.8+**
+## Step 1: Setup
 
-## 🚀 Step 1: Install Dependencies
+Instructions here...
 
-```bash
-echo "Install your dependencies here"
+## Next Steps
+
+Links to related tutorials...
 ```
 
-## ⚙️ Step 2: Configuration
+**Accepted values for `category`:** `Setup`, `Text`, `Image`, `Audio`, `Multimodal`, `Fundamentals`, `Workshops`
 
-```bash
-python configure.py --flag example
-```
-
-## 📊 Performance Benchmarks
-
-| Device | Model Size | Memory Usage | Speed | Quality |
-|--------|------------|--------------|-------|---------|
-| Jetson Thor | 7B | 8GB | 45 tokens/s | Excellent |
-| AGX Orin 64GB | 7B | 12GB | 35 tokens/s | Excellent |
-| AGX Orin 32GB | 7B | 12GB | 35 tokens/s | Excellent |
-| Orin NX 16GB | 3B | 6GB | 25 tokens/s | Good |
-| Orin Nano 8GB | 1B | 3GB | 15 tokens/s | Good |
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-**Issue 1: Memory Error**
-```bash
-python fix_memory.py
-```
-
-**Issue 2: CUDA Error**
-```bash
-python resolve_cuda.py
-```
-
-## 🎉 Conclusion
-
-Wrap-up text...
-
-## 🔗 Next Steps
-
-- [Related Tutorial 1](/tutorials/tutorial-1)
-- [Related Tutorial 2](/tutorials/tutorial-2)
-```
-
-Accepted values for `difficulty`: `Beginner`, `Intermediate`, `Advanced`.
+---
 
 ### 2. Create the Astro page
 
@@ -92,128 +49,274 @@ Add a minimal `.astro` file under `src/pages/tutorials/`:
 import TutorialLayout from '../../layouts/TutorialLayout.astro';
 ---
 
-<TutorialLayout tutorialId="markdown-file-name" />
+<TutorialLayout tutorialId="your-tutorial-filename" />
 ```
 
-### 3. Update the tutorial directory
+---
 
-Include the new tutorial in the array inside `src/pages/tutorials/index.astro`:
+## Reusable Components (for MDX files)
 
-```javascript
-{
-  id: 'markdown-file-name',
-  title: 'Tutorial Title',
-  description: 'Summary of the tutorial',
-  category: 'Text',
-  difficulty: 'Beginner',
-  duration: '30 min',
-  devices: ['Jetson Thor', 'AGX Orin 64GB', 'AGX Orin 32GB', 'Orin NX 16GB', 'Orin Nano 8GB'],
-  tags: ['tag1', 'tag2', 'tag3'],
-  featured: true
-}
+For tutorials with interactive elements, use `.mdx` files.
+
+### Import the Tabs Component
+
+```mdx
+---
+title: "My Tutorial"
+description: "Tutorial with tabs"
+category: "Setup"
+...
+---
+
+import Tabs from '../../components/Tabs.astro';
+
+Content here...
 ```
 
-## ✅ Why the Unified System Helps
+### Main Tabs
 
-### 🎨 Automatic Styling
-- ✅ Elegant hero section
-- ✅ Professional typography
-- ✅ Consistent NVIDIA palette
-- ✅ Syntax highlighting for code
-- ✅ Rich tables
-- ✅ Related tutorials section
+Use for switching between major content sections:
 
-### 🔧 Easy Maintenance
-- ✅ Single source of style overrides
-- ✅ Global changes propagate instantly
-- ✅ No duplicated code
-- ✅ Predictable layout
+```mdx
+<Tabs labels={["🖥️ Method A", "📡 Method B", "😁 Method C"]}>
+<div class="nv-tab-panel active">
 
-### 📱 Responsive By Design
-- ✅ Mobile-first layout
-- ✅ Works on any screen size
-- ✅ Smooth navigation
+Content for Method A (first tab is active by default)
 
-### 🚀 Built for Growth
-- ✅ Add tutorials in seconds
-- ✅ Modular structure
-- ✅ Simple to extend
+</div>
 
-## 📁 File Structure
+<div class="nv-tab-panel">
+
+Content for Method B
+
+</div>
+
+<div class="nv-tab-panel">
+
+Content for Method C
+
+</div>
+</Tabs>
+```
+
+### Subtabs (GUI/CUI)
+
+Use for nested tabs within content:
+
+```html
+<div class="nv-subtabs">
+  <div class="nv-subtabs-labels">
+    <button type="button" class="nv-subtab-btn active">🖥️ GUI</button>
+    <button type="button" class="nv-subtab-btn">>_ CUI</button>
+  </div>
+  <div class="nv-subtabs-content">
+    <div class="nv-subtab-panel active">
+      GUI content here
+    </div>
+    <div class="nv-subtab-panel">
+      Command line content here
+    </div>
+  </div>
+</div>
+```
+
+### Admonitions (Note, Warning, Tip, Danger, Info)
+
+```html
+<div class="admonition note">
+<p class="admonition-title">📘 Note</p>
+<p>This is a note with helpful information.</p>
+</div>
+
+<div class="admonition warning">
+<p class="admonition-title">⚠️ Warning</p>
+<p>This is a warning about something important.</p>
+</div>
+
+<div class="admonition tip">
+<p class="admonition-title">✅ Tip</p>
+<p>This is a helpful tip.</p>
+</div>
+
+<div class="admonition danger">
+<p class="admonition-title">🚫 Danger</p>
+<p>This is a critical warning.</p>
+</div>
+
+<div class="admonition info">
+<p class="admonition-title">ℹ️ Info</p>
+<p>This is general information.</p>
+</div>
+```
+
+### Collapsible/Expandable Sections
+
+```html
+<details class="nv-details">
+<summary>Click to expand</summary>
+<div class="nv-details-content">
+
+Hidden content revealed when expanded.
+
+</div>
+</details>
+```
+
+### Buttons
+
+```html
+<!-- Primary button (NVIDIA green) -->
+<a href="/link" class="nv-button">Download Now</a>
+
+<!-- Secondary button (purple) -->
+<a href="/link" class="nv-button secondary">Alternative Option →</a>
+```
+
+### Images
+
+```html
+<img src="/archive/images/example.png" alt="Description" class="tutorial-img" style="max-width: 600px;" />
+```
+
+### Keyboard Keys
+
+```html
+Press <kbd>Esc</kbd> to continue.
+```
+
+### Color-coded Labels
+
+```html
+<span class="blob-green">Green</span>
+<span class="blob-white">White</span>
+<span class="blob-black">Black</span>
+```
+
+### Mermaid Diagrams
+
+Use standard markdown code blocks with `mermaid` language:
+
+~~~markdown
+```mermaid
+flowchart LR
+    A(start) --> B{Decision?}
+    B --YES--> C[Action 1]
+    B --No--> D[Action 2]
+```
+~~~
+
+### Code Blocks in JSX (for MDX)
+
+When using code inside JSX elements, escape with curly braces:
+
+```html
+<pre style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px;">
+  <code>{"sudo apt-get install package-name"}</code>
+</pre>
+```
+
+For multi-line code, use `\n` for newlines:
+
+```html
+<pre style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; white-space: pre-wrap;">
+  <code>{"line 1\nline 2\nline 3"}</code>
+</pre>
+```
+
+---
+
+## File Structure
 
 ```
 src/
+├── components/
+│   └── Tabs.astro              # Tabs + global styles
 ├── layouts/
-│   └── TutorialLayout.astro          # Unified layout
+│   └── TutorialLayout.astro    # Unified layout
 ├── content/
 │   └── tutorials/
-│       ├── tutorial-1.md             # Markdown content
-│       ├── tutorial-2.md
+│       ├── tutorial-1.md       # Simple markdown
+│       ├── tutorial-2.mdx      # MDX with components
 │       └── ...
 └── pages/
     └── tutorials/
-        ├── tutorial-1.astro          # Three-line page
+        ├── tutorial-1.astro    # Minimal page wrapper
         ├── tutorial-2.astro
-        └── index.astro               # Tutorial directory
+        └── index.astro         # Tutorial directory
 ```
 
-## 🎯 Complete Example
-
-### File: `src/content/tutorials/my-tutorial.md`
-```markdown
----
-title: "Custom Tutorial"
-description: "Walkthrough of my workflow"
-difficulty: "Intermediate"
-duration: "45 min"
-tags: ["custom", "example", "demo"]
-model: "custom"
-publishedAt: 2024-09-15
-author: "Asier Arranz"
-featured: true
 ---
 
-## 🎯 Overview
+## Complete MDX Example
 
-Custom tutorial content...
+```mdx
+---
+title: "Complete Example Tutorial"
+description: "Shows all available components"
+category: "Setup"
+section: "Getting Started"
+order: 1
+tags: ["example", "demo"]
+---
 
-## 📋 Prerequisites
+import Tabs from '../../components/Tabs.astro';
 
-### Hardware Requirements
-- **Jetson Thor** (128GB)
-- **AGX Orin 64GB/32GB**
-- **Orin NX 16GB**
-- **Orin Nano 8GB**
+<div class="admonition note">
+<p class="admonition-title">📘 Note</p>
+<p>This tutorial demonstrates all available components.</p>
+</div>
 
-## 🚀 Step 1: Setup
+## Choose Your Method
+
+<Tabs labels={["🐧 Ubuntu", "🪟 Windows"]}>
+<div class="nv-tab-panel active">
+
+Ubuntu instructions here...
 
 ```bash
-python custom_setup.py
+sudo apt update
 ```
 
-## 🎉 Conclusion
+</div>
 
-Tutorial completed!
+<div class="nv-tab-panel">
+
+Windows instructions here...
+
+```powershell
+winget install package
 ```
 
-### File: `src/pages/tutorials/my-tutorial.astro`
-```astro
+</div>
+</Tabs>
+
+## Learn More
+
+<details class="nv-details">
+<summary>Advanced Configuration</summary>
+<div class="nv-details-content">
+
+Additional details hidden by default...
+
+</div>
+</details>
+
+## Next Steps
+
+<p>
+<a href="/tutorials/next" class="nv-button">Continue →</a>
+</p>
+```
+
 ---
-import TutorialLayout from '../../layouts/TutorialLayout.astro';
----
 
-<TutorialLayout tutorialId="my-tutorial" />
-```
+## Benefits of the Unified System
 
-## 🎉 You're All Set
-
-With a Markdown file and three lines of Astro, the tutorial is ready with:
-
-- ✅ Professional design
-- ✅ Consistent styling
-- ✅ Integrated navigation
-- ✅ Related recommendations
-- ✅ Responsive layout
+- ✅ Professional design with NVIDIA branding
+- ✅ Consistent styling across all tutorials
+- ✅ Interactive tabs and collapsible sections
+- ✅ Mermaid diagram support
+- ✅ Responsive layout for all devices
 - ✅ SEO-ready metadata
+- ✅ Easy to maintain and extend
 
-The system handles the rest for you. 🚀
