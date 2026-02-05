@@ -20,6 +20,7 @@ supported_inference_engines:
     run_command_thor: |
       sudo docker run -it --rm --pull always --runtime=nvidia --network host \
         -e HF_TOKEN=$HF_TOKEN \
+        -v $HOME/.cache/huggingface:/root/.cache/huggingface \
         ghcr.io/nvidia-ai-iot/vllm:latest-jetson-thor \
         bash -c "wget -q -O /tmp/nano_v3_reasoning_parser.py --header=\"Authorization: Bearer \$HF_TOKEN\" \
           https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8/resolve/main/nano_v3_reasoning_parser.py && \
@@ -27,6 +28,16 @@ supported_inference_engines:
             --trust-remote-code --enable-auto-tool-choice --tool-call-parser qwen3_coder \
             --reasoning-parser-plugin /tmp/nano_v3_reasoning_parser.py --reasoning-parser nano_v3 --kv-cache-dtype fp8"
 ---
+
+**Before you run:** Set and export your Hugging Face token so the container can download the model and parser without being rate-limited (429):
+
+```bash
+export HF_TOKEN=your_token_here
+```
+
+Create a token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens). Without `HF_TOKEN`, Hugging Face may block with "Too Many Requests" and vLLM will fail with "Invalid repository ID".
+
+The command mounts `$HOME/.cache/huggingface` into the container so model files are cached on the host. That is the default Hugging Face cache location; vLLM and the download tools use it, so you only download once and subsequent runs reuse the cache.
 
 NVIDIA Nemotron Nano 30B-A3B is a general purpose reasoning and chat model designed as a unified model for both reasoning and non-reasoning tasks. It responds to user queries by first generating a reasoning trace and then concluding with a final response.
 
@@ -62,4 +73,11 @@ English, Spanish, French, German, Japanese, Italian, and coding languages.
 The model's reasoning capabilities can be configured through a flag in the chat template:
 - **With reasoning traces**: Higher-quality solutions for complex queries
 - **Without reasoning traces**: Faster responses with slight accuracy trade-off for simpler tasks
+
+### Skipping reasoning (minimize TTFT)
+
+For low-latency or single-token tasks (e.g. picking a number for a pre-scripted response), disable reasoning so the model does not generate a `<think>` block first:
+
+- **Per request**: Pass `extra_body={"chat_template_kwargs": {"enable_thinking": false}}` in your chat completion call, and use `max_tokens=1` (or 2) if you only need one token.
+- **Server default**: Add `--default-chat-template-kwargs '{"enable_thinking": false}'` to the `vllm serve` command so all requests skip reasoning by default and TTFT stays minimal.
 
