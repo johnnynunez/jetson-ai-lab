@@ -27,5 +27,3 @@ The system integrates multiple components including Qwen3-4B LLM served via SGLa
 
 - [Hackster Project](https://www.hackster.io/shahizat/build-local-ai-rag-agent-with-n8n-on-nvidia-jetson-agx-orin-665914)
 - [NVIDIA Forums Discussion](https://forums.developer.nvidia.com/t/build-local-ai-rag-agent-with-n8n-on-nvidia-jetson-agx-orin/342095)
-
-
