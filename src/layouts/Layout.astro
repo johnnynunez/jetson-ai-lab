@@ -28,6 +28,42 @@ const { title, description = "Experience the latest generative AI models optimiz
       gtag('config', 'G-SXH8S4Y8RW');
     </script>
 
+    <!-- ISO download tracking -->
+    <script is:inline>
+      document.addEventListener('DOMContentLoaded', function () {
+        const links = Array.from(document.querySelectorAll('a[href$=".iso"]'));
+
+        links.forEach(link => {
+          link.addEventListener('click', function (e) {
+            const url = link.href;
+            const openInNewTab = e.metaKey || e.ctrlKey || link.target === '_blank';
+            const fileName = (new URL(url)).pathname.split('/').pop() || 'unknown';
+            if (!openInNewTab) e.preventDefault();
+
+            // Optional: parse your NVIDIA URL for useful params
+            const m = link.pathname.match(/L4T\/(r\d+_Release_v[\d.]+)\/.*jetsoninstaller-([\d.]+)-(r[\d.]+)-([\d-]+)-(arm64)\.iso$/);
+
+            if (typeof gtag === 'function') {
+              gtag('event', 'download_iso_file', {
+                file_extension: 'iso',
+                file_name: fileName,
+                link_url: url,
+                l4t_release_raw: m?.[1] || '',
+                installer_version: m?.[2] || '',
+                l4t_release: m?.[3] || '',
+                build_timestamp: m?.[4] || '',
+                arch: m?.[5] || '',
+                event_callback: function () { if (!openInNewTab) window.location.href = url; },
+                event_timeout: 2000
+              });
+            }
+
+            if (!openInNewTab) setTimeout(() => { window.location.href = url; }, 1000);
+          }, { capture: true });
+        });
+      });
+    </script>
+
     <!-- OneTrust Cookies Consent Notice - Only on Production -->
     <!-- Excluded on localhost/staging to avoid popup loop on non-production domains -->
     <script is:inline>
@@ -40,19 +76,19 @@ const { title, description = "Experience the latest generative AI models optimiz
         script1.charset = 'UTF-8';
         script1.setAttribute('data-domain-script', '018e2d65-efdf-7071-b793-f15ccf25c234');
         document.head.appendChild(script1);
-        
+
         // OptanonWrapper callback
         window.OptanonWrapper = function() {
           var event = new Event('bannerLoaded');
           window.dispatchEvent(event);
         };
-        
+
         // OneTrust custom JS
         var script2 = document.createElement('script');
         script2.src = 'https://images.nvidia.com/aem-dam/Solutions/ot-js/ot-custom.js';
         script2.type = 'text/javascript';
         document.head.appendChild(script2);
-        
+
         // Adobe DTM
         var script3 = document.createElement('script');
         script3.src = '//assets.adobedtm.com/5d4962a43b79/814eb6e9b4e1/launch-4bc07f1e0b0b.min.js';
@@ -115,13 +151,13 @@ const { title, description = "Experience the latest generative AI models optimiz
         </div>
       </nav>
     </header>
-    
+
     <!-- Mobile Menu Toggle Script -->
     <script is:inline>
       (function() {
         var menuButton = document.getElementById('mobile-menu-button');
         var mobileMenu = document.getElementById('mobile-menu');
-        
+
         if (menuButton && mobileMenu) {
           menuButton.addEventListener('click', function() {
             mobileMenu.classList.toggle('hidden');
@@ -166,8 +202,7 @@ const { title, description = "Experience the latest generative AI models optimiz
         <div class="mt-12 pt-8 border-t border-nvidia-gray-700">
           <ul class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-nvidia-gray-400 mb-4">
             <li><a href="https://www.nvidia.com/en-us/about-nvidia/privacy-policy/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Privacy Policy</a></li>
-            <li><a href="https://www.nvidia.com/en-us/privacy-center/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Manage My Privacy</a></li>
-            <li><a href="https://www.nvidia.com/en-us/preferences/email-preferences/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Do Not Sell or Share My Data</a></li>
+            <li><a href="https://www.nvidia.com/en-us/about-nvidia/privacy-center/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Your Privacy Choices</a></li>
             <li><a href="https://www.nvidia.com/en-us/about-nvidia/legal-info/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Legal</a></li>
             <li><a href="https://www.nvidia.com/en-us/about-nvidia/accessibility/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Accessibility</a></li>
             <li><a href="https://www.nvidia.com/en-us/about-nvidia/company-policies/" target="_self" class="hover:text-nvidia-white transition-colors duration-200">Corporate Policies</a></li>
@@ -175,7 +210,7 @@ const { title, description = "Experience the latest generative AI models optimiz
             <li><a href="https://www.nvidia.com/en-us/contact/" target="_blank" class="hover:text-nvidia-white transition-colors duration-200">Contact</a></li>
           </ul>
           <p class="text-nvidia-gray-400 text-sm text-center">
-            © 2025 NVIDIA Corporation. All rights reserved.
+            © 2026 NVIDIA Corporation. All rights reserved.
           </p>
         </div>
       </div>
@@ -360,7 +395,7 @@ const { title, description = "Experience the latest generative AI models optimiz
 
         function buildShell(meta, st) {
           var engineLower = (st.engine || '').toLowerCase();
-          
+
           // Check for full custom command from supportedEngines (for vLLM and llama.cpp)
           if (meta.supportedEngines && meta.supportedEngines.length > 0) {
             var customEngine = meta.supportedEngines.find(function(e) {
@@ -386,7 +421,7 @@ const { title, description = "Experience the latest generative AI models optimiz
               }
             }
           }
-          
+
           var image = getEngineImage(meta, engineLower, st.device);
           var container = sanitize(st.engine) + '-' + sanitize(meta.modelId);
           var runLine = engineRunLine(engineLower, meta.modelId, st.port, st.ctx, st.batch, st.steps, meta, st);
@@ -525,8 +560,14 @@ const { title, description = "Experience the latest generative AI models optimiz
               txt = '# Unable to generate command. Please check your configuration.';
             }
 
+            // Store raw command for copy: strip the two leading spaces on continuation lines so paste works
+            var copyTxt = (lang === 'shell') ? txt.replace(/(\\)\n\s+/g, '$1\n') : txt;
+            pre.dataset.copyText = copyTxt;
+            // For shell: show continuation lines with two spaces (use content as-is if it already has \n  , else add)
+            var displayTxt = (lang === 'shell' && txt.indexOf('\\\n') !== -1)
+              ? (txt.indexOf('\\\n  ') !== -1 ? txt : txt.replace(/(\\)\n/g, '$1\n  ')) : txt;
             // Apply syntax highlighting
-            pre.innerHTML = highlightSyntax(txt, lang);
+            pre.innerHTML = highlightSyntax(displayTxt, lang);
           } catch (err) {
             console.error('RunCommand render error:', err);
             var pre = qs(modal, '[data-snippet]');
@@ -601,7 +642,8 @@ const { title, description = "Experience the latest generative AI models optimiz
             var modal = copyBtn.closest('[data-run-modal]');
             var pre = modal && qs(modal, '[data-snippet]');
             if (pre) {
-              navigator.clipboard.writeText(pre.textContent || '');
+              var toCopy = (pre.dataset && pre.dataset.copyText !== undefined) ? pre.dataset.copyText : (pre.textContent || '');
+              navigator.clipboard.writeText(toCopy);
               var original = copyBtn.textContent;
               copyBtn.textContent = 'Copied';
               setTimeout(function () { copyBtn.textContent = original || 'Copy'; }, 1200);
