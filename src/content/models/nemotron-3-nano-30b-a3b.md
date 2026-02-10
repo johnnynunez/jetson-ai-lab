@@ -18,28 +18,22 @@ supported_inference_engines:
   - engine: "vLLM"
     type: "Container"
     run_command_thor: |
-      sudo docker run -it --rm --pull always --runtime=nvidia --network host \
-        -e HF_TOKEN=$HF_TOKEN \
+      sudo docker run -it --rm --pull always --runtime=nvidia \
+        -p ${VLLM_PORT:-8000}:${VLLM_PORT:-8000} \
+        -e HF_TOKEN=$HF_TOKEN -e VLLM_PORT=${VLLM_PORT:-8000} \
+        -e VLLM_GPU_MEMORY_UTILIZATION=${VLLM_GPU_MEMORY_UTILIZATION:-0.8} \
+        -e VLLM_USE_FLASHINFER_MOE_FP4=1 -e VLLM_FLASHINFER_MOE_BACKEND=throughput \
         -v $HOME/.cache/huggingface:/root/.cache/huggingface \
-        ghcr.io/nvidia-ai-iot/vllm:latest-jetson-thor \
+        nvcr.io/nvidia/vllm:25.12.post1-py3 \
         bash -c "wget -q -O /tmp/nano_v3_reasoning_parser.py --header=\"Authorization: Bearer \$HF_TOKEN\" \
-          https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8/resolve/main/nano_v3_reasoning_parser.py && \
-          vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8 \
+          https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4/resolve/main/nano_v3_reasoning_parser.py && \
+          vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 \
+            --port \$VLLM_PORT --gpu-memory-utilization \$VLLM_GPU_MEMORY_UTILIZATION \
             --trust-remote-code --enable-auto-tool-choice --tool-call-parser qwen3_coder \
             --reasoning-parser-plugin /tmp/nano_v3_reasoning_parser.py --reasoning-parser nano_v3 --kv-cache-dtype fp8"
 ---
 
-**Before you run:** Set and export your Hugging Face token so the container can download the model and parser without being rate-limited (429):
-
-```bash
-export HF_TOKEN=your_token_here
-```
-
-Create a token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens). Without `HF_TOKEN`, Hugging Face may block with "Too Many Requests" and vLLM will fail with "Invalid repository ID".
-
-The command mounts `$HOME/.cache/huggingface` into the container so model files are cached on the host. That is the default Hugging Face cache location; vLLM and the download tools use it, so you only download once and subsequent runs reuse the cache.
-
-NVIDIA Nemotron Nano 30B-A3B is a general purpose reasoning and chat model designed as a unified model for both reasoning and non-reasoning tasks. It responds to user queries by first generating a reasoning trace and then concluding with a final response.
+**Run command options:** Set `VLLM_PORT` (default `8000`) and `VLLM_GPU_MEMORY_UTILIZATION` (default `0.8`) before running. If you see *"Free memory on device ... is less than desired GPU memory utilization"*, lower the latter (e.g. `export VLLM_GPU_MEMORY_UTILIZATION=0.12` when only ~14 GiB GPU is free).
 
 ## Architecture
 
@@ -80,4 +74,3 @@ For low-latency or single-token tasks (e.g. picking a number for a pre-scripted 
 
 - **Per request**: Pass `extra_body={"chat_template_kwargs": {"enable_thinking": false}}` in your chat completion call, and use `max_tokens=1` (or 2) if you only need one token.
 - **Server default**: Add `--default-chat-template-kwargs '{"enable_thinking": false}'` to the `vllm serve` command so all requests skip reasoning by default and TTFT stays minimal.
-
