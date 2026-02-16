@@ -33,6 +33,7 @@ const models = defineCollection({
     memory_requirements: z.string(),
     precision: z.string(),
     model_size: z.string(),
+    minimum_jetson: z.string().optional(),
     supported_inference_engines: z.array(z.object({
       engine: z.string(),
       type: z.string(), // "Container" or "Native"

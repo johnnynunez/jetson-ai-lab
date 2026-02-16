@@ -17,10 +17,23 @@ minimum_jetson: "Thor"
 supported_inference_engines:
   - engine: "vLLM"
     type: "Container"
-    run_command_thor: "sudo docker run -it --rm --pull always --runtime=nvidia --network host -e VLLM_USE_FLASHINFER_MOE_FP4=1 -e VLLM_FLASHINFER_MOE_BACKEND=throughput nvcr.io/nvidia/vllm:25.12.post1-py3 bash -c \"wget https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4/resolve/main/nano_v3_reasoning_parser.py && vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 --trust-remote-code --enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser-plugin nano_v3_reasoning_parser.py --reasoning-parser nano_v3 --kv-cache-dtype fp8\""
+    run_command_thor: |
+      sudo docker run -it --rm --pull always --runtime=nvidia \
+        -p ${VLLM_PORT:-8000}:${VLLM_PORT:-8000} \
+        -e HF_TOKEN=$HF_TOKEN -e VLLM_PORT=${VLLM_PORT:-8000} \
+        -e VLLM_GPU_MEMORY_UTILIZATION=${VLLM_GPU_MEMORY_UTILIZATION:-0.8} \
+        -e VLLM_USE_FLASHINFER_MOE_FP4=1 -e VLLM_FLASHINFER_MOE_BACKEND=throughput \
+        -v $HOME/.cache/huggingface:/root/.cache/huggingface \
+        nvcr.io/nvidia/vllm:25.12.post1-py3 \
+        bash -c "wget -q -O /tmp/nano_v3_reasoning_parser.py --header=\"Authorization: Bearer \$HF_TOKEN\" \
+          https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4/resolve/main/nano_v3_reasoning_parser.py && \
+          vllm serve nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-NVFP4 \
+            --port \$VLLM_PORT --gpu-memory-utilization \$VLLM_GPU_MEMORY_UTILIZATION \
+            --trust-remote-code --enable-auto-tool-choice --tool-call-parser qwen3_coder \
+            --reasoning-parser-plugin /tmp/nano_v3_reasoning_parser.py --reasoning-parser nano_v3 --kv-cache-dtype fp8"
 ---
 
-NVIDIA Nemotron Nano 30B-A3B is a general purpose reasoning and chat model designed as a unified model for both reasoning and non-reasoning tasks. It responds to user queries by first generating a reasoning trace and then concluding with a final response.
+**Run command options:** Set `VLLM_PORT` (default `8000`) and `VLLM_GPU_MEMORY_UTILIZATION` (default `0.8`) before running. If you see *"Free memory on device ... is less than desired GPU memory utilization"*, lower the latter (e.g. `export VLLM_GPU_MEMORY_UTILIZATION=0.12` when only ~14 GiB GPU is free).
 
 ## Architecture
 
@@ -55,3 +68,9 @@ The model's reasoning capabilities can be configured through a flag in the chat 
 - **With reasoning traces**: Higher-quality solutions for complex queries
 - **Without reasoning traces**: Faster responses with slight accuracy trade-off for simpler tasks
 
+### Skipping reasoning (minimize TTFT)
+
+For low-latency or single-token tasks (e.g. picking a number for a pre-scripted response), disable reasoning so the model does not generate a `<think>` block first:
+
+- **Per request**: Pass `extra_body={"chat_template_kwargs": {"enable_thinking": false}}` in your chat completion call, and use `max_tokens=1` (or 2) if you only need one token.
+- **Server default**: Add `--default-chat-template-kwargs '{"enable_thinking": false}'` to the `vllm serve` command so all requests skip reasoning by default and TTFT stays minimal.
