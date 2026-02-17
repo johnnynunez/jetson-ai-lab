@@ -41,8 +41,8 @@ This tutorial walks through serving **Cosmos Reasoning 2B FP8 Model** with **vLL
 |---|---|---|---|
 | **vLLM Container** | `nvcr.io/nvidia/vllm:26.01-py3` | `ghcr.io/nvidia-ai-iot/vllm:r36.4-tegra-aarch64-cu126-22.04` | `ghcr.io/nvidia-ai-iot/vllm:r36.4-tegra-aarch64-cu126-22.04` |
 | **Model** | FP8 via NGC (volume mount) | FP8 via NGC (volume mount) | FP8 via NGC (volume mount) |
-| **Max Model Length** | 8192 tokens | 8192 tokens | 256 tokens (memory-constrained) |
-| **GPU Memory Util** | 0.8 | 0.8 | 0.65 |
+| **Max Model Length** | 8192 tokens | 8192 tokens | 768 tokens (memory-constrained) |
+| **GPU Memory Util** | 0.8 | 0.8 | 0.52 |
 
 The workflow is the same for both devices:
 
@@ -177,6 +177,9 @@ sudo sysctl -w vm.drop_caches=3
 docker run --rm -it \
   --runtime nvidia \
   --network host \
+  --shm-size=8g \
+  --ulimit memlock=-1 \
+  --ulimit stack=67108864 \
   -v "$MODEL_PATH:/models/cosmos-reason2-2b:ro" \
   -e NVIDIA_VISIBLE_DEVICES=all \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
@@ -205,16 +208,41 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 
 ### Option C: Jetson Orin Super Nano (memory-constrained)
 
-The Orin Super Nano has significantly less RAM, so we need aggressive memory optimization flags.
+The Orin Super Nano has significantly less RAM, so we need aggressive memory optimization including reducing the model's default image resolution to fit within the available memory.
 
-Set the path to your downloaded model and free cached memory on the host:
+**1. Reduce the model's image resolution config:**
+
+The default `preprocessor_config.json` allows images up to 16M pixels, which produces too many tokens for the Orin Super Nano's limited context window. Reduce it on the host before launching Docker:
+
+```bash
+cd ~/Projects/CosmosReasoning/cosmos-reason2-2b_v1208-fp8-static-kv8
+cp preprocessor_config.json preprocessor_config.json.bak
+
+python3 -c "
+import json
+with open('preprocessor_config.json') as f:
+    cfg = json.load(f)
+print(f'Old longest_edge: {cfg[\"size\"][\"longest_edge\"]}')
+print(f'Old shortest_edge: {cfg[\"size\"][\"shortest_edge\"]}')
+cfg['size']['longest_edge'] = 50176
+cfg['size']['shortest_edge'] = 3136
+with open('preprocessor_config.json', 'w') as f:
+    json.dump(cfg, f, indent=2)
+print('New longest_edge: 50176')
+print('New shortest_edge: 3136')
+"
+```
+
+This limits input images to ~50K pixels, keeping image tokens small enough to fit in the constrained context window.
+
+**2. Set the model path and free cached memory:**
 
 ```bash
 MODEL_PATH="$HOME/Projects/CosmosReasoning/cosmos-reason2-2b_v1208-fp8-static-kv8"
 sudo sysctl -w vm.drop_caches=3
 ```
 
-**1. Launch the container:**
+**3. Launch the container:**
 
 ```bash
 docker run --rm -it \
@@ -227,7 +255,7 @@ docker run --rm -it \
   bash
 ```
 
-**2. Inside the container, activate the environment and serve:**
+**4. Inside the container, activate the environment and serve:**
 
 ```bash
 cd /opt/
@@ -238,13 +266,12 @@ vllm serve /models/cosmos-reason2-2b \
   --port 8000 \
   --trust-remote-code \
   --enforce-eager \
-  --max-model-len 256 \
-  --max-num-batched-tokens 256 \
-  --gpu-memory-utilization 0.65 \
+  --max-model-len 768 \
+  --max-num-batched-tokens 768 \
+  --gpu-memory-utilization 0.52 \
   --max-num-seqs 1 \
   --enable-chunked-prefill \
-  --limit-mm-per-prompt '{"image":1,"video":1}' \
-  --mm-processor-kwargs '{"num_frames":2,"max_pixels":150528}'
+  --limit-mm-per-prompt '{"image":1}'
 ```
 
 **Key flags explained (Orin Super Nano only):**
@@ -252,13 +279,12 @@ vllm serve /models/cosmos-reason2-2b \
 | Flag | Purpose |
 |------|---------|
 | `--enforce-eager` | Disables CUDA graphs to save memory |
-| `--max-model-len 256` | Limits context to fit in available memory |
-| `--max-num-batched-tokens 256` | Matches the model length limit |
-| `--gpu-memory-utilization 0.65` | Reserves headroom for system processes |
+| `--max-model-len 768` | Context window sized for image tokens + output |
+| `--max-num-batched-tokens 768` | Matches the model length limit |
+| `--gpu-memory-utilization 0.52` | Uses most available memory (Orin Super Nano has ~3.9 GiB free of 7.4 GiB) |
 | `--max-num-seqs 1` | Single request at a time to minimize memory |
 | `--enable-chunked-prefill` | Processes prefill in chunks for memory efficiency |
-| `--limit-mm-per-prompt` | Limits to 1 image and 1 video per prompt |
-| `--mm-processor-kwargs` | Reduces video frames and image resolution |
+| `--limit-mm-per-prompt` | Limits to 1 image per prompt (Live VLM WebUI sends frames as images) |
 | `VLLM_SKIP_WARMUP=true` | Skips warmup to save time and memory |
 
 Wait until you see the server is ready:
@@ -340,12 +366,15 @@ cd live-vlm-webui
 
 The WebUI will now stream your webcam frames to Cosmos Reasoning 2B and display the model's analysis in real-time.
 
-### Recommended WebUI settings for Orin
+### Required WebUI settings for Orin Super Nano
 
-Since Orin runs with a shorter context length, adjust these settings in the WebUI:
+> **Important:** On Orin Super Nano, vLLM is configured with `--max-model-len 768`. The WebUI defaults to `max_tokens: 512`, which will cause requests to fail with a `400 Bad Request` error since image tokens consume most of the context window. You **must** lower Max Tokens before starting analysis.
 
-- **Max Tokens**: Set to **100–150** (shorter responses complete faster)
+In the WebUI left sidebar, adjust these settings **before clicking Start**:
+
+- **Max Tokens**: Set to **150** (image tokens use ~500-600 of the 768 context, leaving ~150-200 for output)
 - **Frame Processing Interval**: Set to **60+** (gives the model time between frames)
+- Use **short prompts** — longer prompts consume more input tokens, leaving fewer for the response
 
 ---
 
@@ -360,9 +389,18 @@ Since Orin runs with a shorter context length, adjust these settings in the WebU
    ```bash
    sudo sysctl -w vm.drop_caches=3
    ```
-2. Lower `--gpu-memory-utilization` (try `0.55` or `0.50`)
+2. Lower `--gpu-memory-utilization` further (try `0.45` or `0.40`)
 3. Reduce `--max-model-len` further (try `128`)
 4. Make sure no other GPU-intensive processes are running
+
+### "max_tokens is too large" errors on Orin Super Nano
+
+**Problem:** vLLM returns `400 Bad Request` with the error `max_tokens is too large` or `decoder prompt is longer than the maximum model length`.
+
+**Solution:**
+- This happens because image tokens consume most of the 768 token context window (~500-600 tokens for a single image), and the WebUI defaults to `max_tokens: 512`
+- In the WebUI, set **Max Tokens** to **150** before starting analysis
+- Make sure you edited `preprocessor_config.json` to reduce `longest_edge` to `50176` (Step 4, Option C) — without this, images produce too many tokens to fit in the context
 
 ### Model not found in WebUI
 
