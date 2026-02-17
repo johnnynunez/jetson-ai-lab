@@ -9,7 +9,7 @@ model: "vllm"
 isNew: true
 ---
 
-[NVIDIA Cosmos Reasoning 2B](https://build.nvidia.com/nvidia/cosmos-reason2-2b) is a compact vision-language model with built-in chain-of-thought reasoning capabilities. Despite its small 2B parameter size, it can perform spatial reasoning, anomaly detection, and detailed scene analysis, making it well-suited for edge deployment on Jetson.
+[NVIDIA Cosmos Reasoning 2B](https://huggingface.co/nvidia/Cosmos-Reason2-2B) is a compact vision-language model with built-in chain-of-thought reasoning capabilities. Despite its small 2B parameter size, it can perform spatial reasoning, anomaly detection, and detailed scene analysis, making it well-suited for edge deployment on Jetson.
 
 This tutorial walks through serving **Cosmos Reasoning 2B FP8 Model** with **vLLM** on Jetson, and connecting it to **[Live VLM WebUI](https://github.com/NVIDIA-AI-IOT/live-vlm-webui)** for real-time webcam-based inference.
 
