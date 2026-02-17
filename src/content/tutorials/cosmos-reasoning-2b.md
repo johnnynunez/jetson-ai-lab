@@ -406,7 +406,7 @@ The combination of Cosmos Reasoning 2B's chain-of-thought capabilities with Live
 
 ## Additional Resources
 
-- **Cosmos Reasoning 2B on NVIDIA Build**: [https://build.nvidia.com/nvidia/cosmos-reason2-2b](https://build.nvidia.com/nvidia/cosmos-reason2-2b)
+- **Cosmos Reasoning 2B on NVIDIA Build**: [https://huggingface.co/nvidia/Cosmos-Reason2-2B](https://huggingface.co/nvidia/Cosmos-Reason2-2B)
 - **NGC Model Catalog**: [https://catalog.ngc.nvidia.com/](https://catalog.ngc.nvidia.com/)
 - **Live VLM WebUI**: [https://github.com/NVIDIA-AI-IOT/live-vlm-webui](https://github.com/NVIDIA-AI-IOT/live-vlm-webui)
 - **vLLM Containers for Jetson**: [Supported Models](/models)
