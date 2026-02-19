@@ -27,7 +27,7 @@ This tutorial walks through serving **Cosmos Reasoning 2B FP8 Model** with **vLL
 - JetPack 7 (L4T r38.x) — for Thor
 
 **Storage:** NVMe SSD **required**
-- ~5 GB for the FP8 model weights
+- ~5 GB for the 2B FP8 model weights (~17 GB for the 8B model)
 - ~8 GB for the vLLM container image
 
 **Accounts:**
@@ -40,7 +40,7 @@ This tutorial walks through serving **Cosmos Reasoning 2B FP8 Model** with **vLL
 | | Jetson AGX Thor | Jetson AGX Orin | Orin Super Nano |
 |---|---|---|---|
 | **vLLM Container** | `nvcr.io/nvidia/vllm:26.01-py3` | `ghcr.io/nvidia-ai-iot/vllm:r36.4-tegra-aarch64-cu126-22.04` | `ghcr.io/nvidia-ai-iot/vllm:r36.4-tegra-aarch64-cu126-22.04` |
-| **Model** | FP8 via NGC (volume mount) | FP8 via NGC (volume mount) | FP8 via NGC (volume mount) |
+| **Model** | FP8 2B or 8B via NGC | FP8 2B or 8B via NGC | FP8 2B via NGC |
 | **Max Model Length** | 8192 tokens | 8192 tokens | 768 tokens (memory-constrained) |
 | **GPU Memory Util** | 0.8 | 0.8 | 0.52 |
 
@@ -88,14 +88,27 @@ You will be prompted for:
 
 ## Step 2: Download the Model
 
-Download the **FP8 quantized** checkpoint. This is used on all Jetson devices:
+Download the **FP8 quantized** checkpoint of the **2B model**. This is used on all Jetson devices:
 
 ```bash
 cd ~/Projects/CosmosReasoning
 ngc registry model download-version "nim/nvidia/cosmos-reason2-2b:1208-fp8-static-kv8"
 ```
 
-This creates a directory called `cosmos-reason2-2b_v1208-fp8-static-kv8/` containing the model weights. Note the full path — you will mount it into the Docker container as a volume.
+This creates a directory called `cosmos-reason2-2b_v1208-fp8-static-kv8/` containing the model weights.
+
+### Optional: Download the 8B model (AGX Thor / AGX Orin only)
+
+If you want to run the larger **8B model** instead, download it as well:
+
+```bash
+cd ~/Projects/CosmosReasoning
+ngc registry model download-version "nim/nvidia/cosmos-reason2-8b:1208-fp8-static-kv8"
+```
+
+This creates a directory called `cosmos-reason2-8b_v1208-fp8-static-kv8/`. The 8B model provides stronger reasoning capabilities but requires more memory — it is **not supported** on Orin Super Nano.
+
+Note the full path of whichever model you downloaded — you will mount it into the Docker container as a volume.
 
 ---
 
@@ -124,7 +137,12 @@ Thor has ample GPU memory and can run the model with generous context length.
 Set the path to your downloaded model and free cached memory on the host:
 
 ```bash
+# For the 2B model:
 MODEL_PATH="$HOME/Projects/CosmosReasoning/cosmos-reason2-2b_v1208-fp8-static-kv8"
+
+# Or for the 8B model:
+# MODEL_PATH="$HOME/Projects/CosmosReasoning/cosmos-reason2-8b_v1208-fp8-static-kv8"
+
 sudo sysctl -w vm.drop_caches=3
 ```
 
@@ -135,7 +153,7 @@ docker run --rm -it \
   --runtime nvidia \
   --network host \
   --ipc host \
-  -v "$MODEL_PATH:/models/cosmos-reason2-2b:ro" \
+  -v "$MODEL_PATH:/models/cosmos-reason:ro" \
   -e NVIDIA_VISIBLE_DEVICES=all \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   nvcr.io/nvidia/vllm:26.01-py3 \
@@ -145,7 +163,7 @@ docker run --rm -it \
 **Inside the container, activate the environment and serve the model:**
 
 ```bash
-vllm serve /models/cosmos-reason2-2b \
+vllm serve /models/cosmos-reason \
   --max-model-len 8192 \
   --media-io-kwargs '{"video": {"num_frames": -1}}' \
   --reasoning-parser qwen3 \
@@ -167,7 +185,12 @@ AGX Orin has enough memory to run the model with the same generous parameters as
 Set the path to your downloaded model and free cached memory on the host:
 
 ```bash
+# For the 2B model:
 MODEL_PATH="$HOME/Projects/CosmosReasoning/cosmos-reason2-2b_v1208-fp8-static-kv8"
+
+# Or for the 8B model:
+# MODEL_PATH="$HOME/Projects/CosmosReasoning/cosmos-reason2-8b_v1208-fp8-static-kv8"
+
 sudo sysctl -w vm.drop_caches=3
 ```
 
@@ -180,7 +203,7 @@ docker run --rm -it \
   --shm-size=8g \
   --ulimit memlock=-1 \
   --ulimit stack=67108864 \
-  -v "$MODEL_PATH:/models/cosmos-reason2-2b:ro" \
+  -v "$MODEL_PATH:/models/cosmos-reason:ro" \
   -e NVIDIA_VISIBLE_DEVICES=all \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   ghcr.io/nvidia-ai-iot/vllm:r36.4-tegra-aarch64-cu126-22.04 \
@@ -193,7 +216,7 @@ docker run --rm -it \
 cd /opt/
 source venv/bin/activate
 
-vllm serve /models/cosmos-reason2-2b \
+vllm serve /models/cosmos-reason \
   --max-model-len 8192 \
   --media-io-kwargs '{"video": {"num_frames": -1}}' \
   --reasoning-parser qwen3 \
@@ -248,7 +271,7 @@ sudo sysctl -w vm.drop_caches=3
 docker run --rm -it \
   --runtime nvidia \
   --network host \
-  -v "$MODEL_PATH:/models/cosmos-reason2-2b:ro" \
+  -v "$MODEL_PATH:/models/cosmos-reason:ro" \
   -e NVIDIA_VISIBLE_DEVICES=all \
   -e NVIDIA_DRIVER_CAPABILITIES=compute,utility \
   ghcr.io/nvidia-ai-iot/vllm:r36.4-tegra-aarch64-cu126-22.04 \
@@ -261,7 +284,7 @@ docker run --rm -it \
 cd /opt/
 source venv/bin/activate
 
-vllm serve /models/cosmos-reason2-2b \
+vllm serve /models/cosmos-reason \
   --host 0.0.0.0 \
   --port 8000 \
   --trust-remote-code \
@@ -313,7 +336,7 @@ Before connecting the WebUI, verify the model responds correctly:
 curl -s http://localhost:8000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "/models/cosmos-reason2-2b",
+    "model": "/models/cosmos-reason",
     "messages": [
       {
         "role": "user",
@@ -425,7 +448,7 @@ In the WebUI left sidebar, adjust these settings **before clicking Start**:
 **Problem:** vLLM reports the model path doesn't exist or can't be loaded.
 
 **Solution:**
-- Verify the NGC download completed successfully: `ls ~/Projects/CosmosReasoning/cosmos-reason2-2b_v1208-fp8-static-kv8/`
+- Verify the NGC download completed successfully: `ls ~/Projects/CosmosReasoning/cosmos-reason2-2b_v1208-fp8-static-kv8/` (or `cosmos-reason2-8b_v1208-fp8-static-kv8/` for the 8B model)
 - Make sure the volume mount path is correct in your `docker run` command
 - Check that the model directory is mounted as read-only (`:ro`) and the path inside the container matches what you pass to `vllm serve`
 
